@@ -92,31 +92,37 @@ has_factor(Num,F) :-
 %    X is Min + 1,
 %    s1X(X,Max,T).
 
-splitSum([],_,S,Acc) :-
-    S > Acc,
+% splitSum(ResultList,MinX,MinSum,Limit)
+% 
+% Increase MinSum from MinSum to Limit, for each
+% MinSum, find possible X and Y, where:
+%   S =< Limit,
+%   S = X + Y,
+%   X < Y,
+%   X and Y cannot be both primes. 
+splitSum([],_,S,Limit) :-
+    S > Limit,
     !.
-splitSum(L,X,S,Acc) :-
+splitSum(L,X,S,Limit) :-
     X >= S/2,
     !,
     S1 is S + 1,
-    splitSum(L,2,S1,Acc).
-splitSum(L,X,S,Acc) :-
+    splitSum(L,2,S1,Limit).
+splitSum(L,X,S,Limit) :-
     Y is S - X,
-    X < Y,
     is_prime(X),
     is_prime(Y),
+    !,
     X1 is X + 1,
-    !,
-    splitSum(L,X1,S,Acc).
-
-splitSum([[X,Y,S,P]|T],X,S,Acc) :-
+    splitSum(L,X1,S,Limit).
+splitSum([[X,Y,S,P]|T],X,S,Limit) :-
     Y is S - X,
-    X < Y,
-    !,
     X1 is X + 1,
     P is X * Y,
-    splitSum(T,X1,S,Acc).
+    splitSum(T,X1,S,Limit).
 
+% s1(ResulitList,Limit)
+% Generate a list which satisfied (a)
 s1(Q,Limit) :-
     splitSum(Q,2,6,Limit).
 

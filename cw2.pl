@@ -3,8 +3,10 @@
 
 */
 
-%! True is a number is prime.
-%  Check all odd number only.
+% is_prime(Number)
+%
+% Number: any number, true if it is a prime.
+
 is_prime(2).
 is_prime(3).
 is_prime(Num) :-
@@ -12,9 +14,12 @@ is_prime(Num) :-
     Num mod 2 =\= 0,
     \+ has_factor(Num, 3).
 
-%! F is the smallest factor of Num.
-%  Num will be odd only, so only check odd factor.
-%  F must be smaller than the sqrt of Num. 
+%  has_factor(Number,Factor)
+%
+%  Number: odd number only
+%  Factor: the smallest factor of the Number,
+%          smaller than sqrt of the Number. 
+
 has_factor(Num,F) :-
     Num mod F =:= 0.
 has_factor(Num,F) :-
@@ -22,30 +27,47 @@ has_factor(Num,F) :-
     F1 is F + 2,
     has_factor(Num,F1).
 
-%! A List of prime numbers in range of Min and Max.
-%  Min and Max are included.
-%  Min should be 2 or any odd numbers lager than 2.
-primeList(Min,Max,[]) :-
+%  numList(Minmum,Maximum,PrimeList,CompositeList)
+%
+%  Minmum: 2 or any odd numbers lager than 2.
+
+numList(Min,Max,[],[]) :-
     Min > Max,
     !.
-primeList(2,Max,[2|T]) :-
-    primeList(3,Max,T),
+numList(2,Max,[2|T],L) :-
+    numList(3,Max,T,L),
     !.
-primeList(Min,Max,[Min|T]) :-
+numList(Min,Max,[Min|T],[Min1|T1]) :-
     is_prime(Min),
     !,
-    Min1 is Min + 2,
-    primeList(Min1,Max,T).
-primeList(Min,Max,L) :-
-    Min1 is Min + 2,
-    primeList(Min1,Max,L).
-
-s1([X,Y,S,P],Limit) :-
-    gen(2,Limit,X),
-    gen(2,Limit,Y),
+    Min1 is Min + 1,
+    Min2 is Min + 2,
+    numList(Min2,Max,T,T1).
+numList(Min,Max,L,[Min|[Min1|T]]) :-
+    Min1 is Min + 1,
+    Min2 is Min + 2,
+    numList(Min2,Max,L,T).
+    
+s1XY([X,Y,S,P],PL,CL,Limit) :-
+    member(X,PL),
+    X =< Limit//2,
+    member(Y,CL),
+    X < Y,
     S is X + Y,
     S =< Limit,
     P is X * Y.
 
+s1XY([X,Y,S,P],_,CL,Limit) :-
+    member(X,CL),
+    X =< Limit//2,
+    member(Y,CL),
+    X < Y,
+    S is X + Y,
+    S =< Limit,
+    P is X * Y.
 
-    
+s1(Q,Limit) :-
+    numList(2,Limit,PL,CL),
+    findall([X,Y,S,P],s1XY([X,Y,S,P],PL,CL,Limit),Q).
+
+

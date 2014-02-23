@@ -39,13 +39,110 @@ next_prime(P,P1) :-
     P2 is P + 1,
     next_prime(P2,P1).
 
-% sortP
 
+% app(FirstList,SecondList,List)
+%
+% List = FirstList + SecondList
+app([],L,L).
+app([E|T],L,[E|M]) :-
+    app(T,L,M).
 
+% mem(Element,List)
+%
+% Check if Element is in List
+mem(X,[X|_]).
+mem(X,[_|T]) :-
+    mem(X,T).
 
+% dupList(InputList,DuplicateList)
+%
+% DuplicateList: a List shows the duplicate item of InputList
+dupList([],[]).
+dupList([H|T1],[H|T2]) :-
+    mem(H,T1),
+    !,
+    dupList(T1,T2).
+dupList([_|T1],L) :-
+    dupList(T1,L).
 
+% pList(List,ListOfProducts)
+pList([],[]).
+pList([[_,_,_,P]|T1], [P|T2]) :-
+    pList(T1,T2).
 
+% filterP(OriginalList,FilterList,ResultList)
+%
+% only elements with P which shows only once are allowed
+filterP([],_,[]).
+filterP([[_,_,_,P]|T],L1,L2) :-
+    mem(P,L1),
+    !,
+    filterP(T,L1,L2).
+filterP([H|T1],L,[H|T2]) :-
+    filterP(T1,L,T2).
 
+% sList(List,ListOfProducts)
+sList([],[]).
+sList([[_,_,S,_]|T1], [S|T2]) :-
+    sList(T1,T2).
+
+% filterS(OriginalList,FilterList,ResultList)
+%
+% only elements with S which shows only once are allowed
+filterS([],_,[]).
+filterS([[_,_,S,_]|T],L1,L2) :-
+    mem(S,L1),
+    !,
+    filterS(T,L1,L2).
+filterS([H|T1],L,[H|T2]) :-
+    filterS(T1,L,T2).
+
+% quicksortP(List,SortedList)
+%
+% 1. split List into Small List and Big List 
+% first element of list will be the pivot;
+% 2. sort the Small List and Big List;
+% 3. do it recursively until all elements are sorted.
+quicksortP([],[]).
+quicksortP([H|T],Sorted) :-
+    splitP(H,T,Small,Big),
+    quicksortP(Small,SortedSmall),
+    quicksortP(Big,SortedBig),
+    app(SortedSmall,[H|SortedBig],Sorted).
+
+% splitP(Head,Tail,Small,Big)
+%
+% ListToSplit = [Head|Tail]
+% Small = [All elements that smaller than Head]
+% Big = [All elements that bigger than Head]
+splitP(_,[],[],[]).
+splitP([X,Y,S,P],[[X1,Y1,S1,P1]|T],[[X1,Y1,S1,P1]|Small],Big) :-
+    P > P1,
+    !,
+    splitP([X,Y,S,P],T,Small,Big).
+splitP([X,Y,S,P],[[X1,Y1,S1,P1]|T],Small,[[X1,Y1,S1,P1]|Big]) :-
+    splitP([X,Y,S,P],T,Small,Big).
+
+% quicksortS(List,SortedList)
+%
+% Same logic as quicksortP.
+quicksortS([],[]).
+quicksortS([H|T],Sorted) :-
+    splitS(H,T,Small,Big),
+    quicksortS(Small,SortedSmall),
+    quicksortS(Big,SortedBig),
+    app(SortedSmall,[H|SortedBig],Sorted).
+
+% splitS(Head,Tail,Small,Big)
+%
+% same logic as quicksortP
+splitS(_,[],[],[]).
+splitS([X,Y,S,P],[[X1,Y1,S1,P1]|T],[[X1,Y1,S1,P1]|Small],Big) :-
+    S > S1,
+    !,
+    splitS([X,Y,S,P],T,Small,Big).
+splitS([X,Y,S,P],[[X1,Y1,S1,P1]|T],Small,[[X1,Y1,S1,P1]|Big]) :-
+    splitS([X,Y,S,P],T,Small,Big).
 
 %  numList(Minmum,Maximum,PrimeList,CompositeList)
 %
@@ -116,15 +213,6 @@ next_prime(P,P1) :-
 % ------------------------------------------------------------------------------
 % s1 will sort out all possilble X and Y, where:
 %   1. X and Y can not be both prime;
-%   2. S =< Max, where Max is the next prime of Limit/2:
-%      Reason: if S > Max, suppose: 
-%              X = N, Y = Max, so S = Max + N, P = Max * N:
-%              - if N is prime, not satisfied (1);
-%              - if N is not prime, N = A * B (1 < A < B):
-%                P = Max * (A * B),
-%                A * Max >= P,
-%                so the only answser will be: X = N, Y = Max.
-
 
 % s1_splitSum(ResultList,MinX,MinSum,Limit)
 % 
@@ -135,8 +223,7 @@ next_prime(P,P1) :-
 %   X < Y,
 %   X and Y cannot be both primes. 
 s1_splitSum([],_,S,Limit) :-
-    next_prime(Limit//2, Max),
-    S > Max,
+    S > Limit,
     !.
 s1_splitSum(L,X,S,Limit) :-
     X >= S/2,
@@ -187,7 +274,14 @@ s1(Q,Limit) :-
 %              - the even number can be 2, which is a prime.
 %                Therefore the odd number must not be a
 %                prime.
-%   3. S =< Max, where Max is the next prime of Limit/2 - according to s1.
+%   3. S =< Max, where Max is the next prime of Limit/2:
+%      Reason: if S > Max, suppose: 
+%              X = N, Y = Max, so S = Max + N, P = Max * N:
+%              - if N is prime, not satisfied (1);
+%              - if N is not prime, N = A * B (1 < A < B):
+%                P = Max * (A * B),
+%                A * Max >= P,
+%                so the only answser will be: X = N, Y = Max.
 s2_sumList(Odd,Limit,[]) :- 
     next_prime(Limit//2,Max),
     Odd > Max,
@@ -225,11 +319,57 @@ s2_splitSum([[X,Y,S,P]|T1],X,[S|T2]) :-
     P is X * Y,
     s2_splitSum(T1,X1,[S|T2]).
 
-% s2(ResulitList,Limit)
-% Generate a list which satisfied (b)
-s2(Q,Limit) :-
+% s2_noSort(List,Limit)
+%
+% List: a list which satified (b)
+s2_noSort(Q,Limit) :-
     s2_sumList(5,Limit,L),
     s2_splitSum(Q,2,L).
+
+% s2(ResulitList,Limit)
+%
+% Generate a list which satisfied (b),
+% and sorted by ascending values of P.
+s2(Q,Limit) :-
+    s2_noSort(L,Limit),
+    quicksortP(L,Q).
+
+% s3 starts here.
+% ------------------------------------------------------------------------------
+% s3 will sort out all possilble X and Y, where:
+%   1. P only occurs once in s2
+
+% s3_noSort(List,Limit)
+%
+% List: a list which satified (c)
+s3_noSort(Q,Limit) :-
+    s2_noSort(L1,Limit),
+    pList(L1,L2),
+    dupList(L2,L3),
+    filterP(L1,L3,Q).
+
+% s3(ResulitList,Limit)
+%
+% Generate a list which satisfied (c)
+% and sorted by ascending values of S.
+s3(Q,Limit) :-
+    s3_noSort(L,Limit),
+    quicksortS(L,Q).
+    
+
+% s4 starts here.
+% ------------------------------------------------------------------------------
+% s4 will sort out all possilble X and Y, where:
+%   1. S only occurs once in s3
+
+% s4(List,Limit)
+%
+% List: a list which satified (d)
+s4(Q,Limit) :-
+    s3_noSort(L1,Limit),
+    sList(L1,L2),
+    dupList(L2,L3),
+    filterS(L1,L3,Q).
 
 
 

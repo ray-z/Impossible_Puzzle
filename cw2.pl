@@ -7,6 +7,15 @@
 %
 % Number: any number, true if it is a prime.
 
+getn([_|T],R,N) :-
+    Rnew is R + 1,
+    getn(T,Rnew,N).
+getn([],R,R).
+counts1(Limit,N) :-
+    s1(Q,Limit),
+    getn(Q,0,N).
+
+
 is_prime(2).
 is_prime(3).
 is_prime(Num) :-
@@ -20,13 +29,22 @@ is_prime(Num) :-
 %  Number: odd number only
 %  Factor: the smallest factor of the Number,
 %          smaller than sqrt of the Number. 
-
 has_factor(Num,F) :-
     Num mod F =:= 0.
 has_factor(Num,F) :-
     F * F < Num,
     F1 is F + 2,
     has_factor(Num,F1).
+
+% smallest_factor(Num,SmallestPossibleFactor,Factor) :-
+%
+% Factor: the smallest factor of Num. 
+smallest_factor(Num,F,F) :-
+    Num mod F =:= 0.
+smallest_factor(Num,F,R) :-
+    F * F < Num,
+    F1 is F + 1,
+    smallest_factor(Num,F1,R).
 
 % next_prime(Number,NextPrime)
 %
@@ -213,6 +231,11 @@ splitS([X,Y,S,P],[[X1,Y1,S1,P1]|T],Small,[[X1,Y1,S1,P1]|Big]) :-
 % ------------------------------------------------------------------------------
 % s1 will sort out all possilble X and Y, where:
 %   1. X and Y can not be both prime;
+%   2. If Y is prime:
+%      Y =< next prime of Limit//2.
+%   3. If Y is not prime:
+%      X * F < Limit, F is the smallest factor of Y.
+%      Reason: if X * F > Limit, there will be only one answer.
 
 % s1_splitSum(ResultList,MinX,MinSum,Limit)
 % 
@@ -230,6 +253,21 @@ s1_splitSum(L,X,S,Limit) :-
     !,
     S1 is S + 1,
     s1_splitSum(L,2,S1,Limit).
+s1_splitSum(L,X,S,Limit) :-
+    Y is S - X,
+    is_prime(Y),
+    next_prime(Limit//2,Max),
+    Y > Max,
+    !,
+    X1 is X + 1,
+    s1_splitSum(L,X1,S,Limit).
+s1_splitSum(L,X,S,Limit) :-
+    Y is S - X,
+    smallest_factor(Y,2,F),
+    X * F + Y >= Limit,
+    !,
+    X1 is X + 1,
+    s1_splitSum(L,X1,S,Limit).
 s1_splitSum(L,X,S,Limit) :-
     Y is S - X,
     is_prime(X),
@@ -252,8 +290,60 @@ s1(Q,Limit) :-
 % s2 starts here.
 % ------------------------------------------------------------------------------
 % s2 will sort out all possilble X and Y, where:
-%   1. S cannot be expressed as a sum of two primes.
+%   1. S is odd number only - Goldbach conjecture
+%   2. S =< Max, where Max is the next prime of Limit//2:
+%      Reason: if S > Max, suppose: 
+%              X = N, Y = Max, so S = Max + N, P = Max * N:
+%              - if N is prime, not satisfied (1);
+%              - if N is not prime, N = A * B (1 < A < B):
+%                P = Max * (A * B),
+%                A * Max >= P,
+%                so the only answser will be: X = N, Y = Max.
+%   3. (Sum - 2) must not be a prime;
+%      Reason: - Sum = odd + even;
+%              - the even number can be 2, which is a prime.
+%                Therefore the odd number must not be a
+%                prime.
+%   4. S =\= Prime + Prime
     
+
+s2_filterS([],[],_).
+s2_filterS([[_,_,S,_]|T1],L,Limit) :-
+    S mod 2 =:= 0,
+    !,
+    s2_filterS(T1,L,Limit).
+s2_filterS([[_,_,S,_]|T1],L,Limit) :-
+    next_prime(Limit//2,Max),
+    S > Max,
+    !,
+    s2_filterS(T1,L,Limit).
+s2_filterS([[_,_,S,_]|T1],L,Limit) :-
+    S1 is S - 2,
+    is_prime(S1),
+    !,
+    s2_filterS(T1,L,Limit).
+%s2_filterS([[X,Y,_,_]|T1],L,Limit) :-
+%    is_prime(X),
+%    is_prime(Y),
+%    !,
+%    s2_filterS(T1,L,Limit).
+s2_filterS([H|T1],[H|T2],Limit) :-
+    s2_filterS(T1,T2,Limit).
+    
+
+s2_noSort(Q,Limit) :-
+    s1(L,Limit),
+    s2_filterS(L,Q,Limit).
+
+s2(Q,Limit) :-
+    s2_noSort(L,Limit),
+    quicksortP(L,Q).
+
+    
+
+
+
+
 %prime_addends(Num,Acc) :-
 %    R is Num - Acc,
 %    is_prime(Acc),
@@ -274,7 +364,7 @@ s1(Q,Limit) :-
 %              - the even number can be 2, which is a prime.
 %                Therefore the odd number must not be a
 %                prime.
-%   3. S =< Max, where Max is the next prime of Limit/2:
+%   3. S =< Max, where Max is the next prime of Limit//2:
 %      Reason: if S > Max, suppose: 
 %              X = N, Y = Max, so S = Max + N, P = Max * N:
 %              - if N is prime, not satisfied (1);
@@ -282,79 +372,104 @@ s1(Q,Limit) :-
 %                P = Max * (A * B),
 %                A * Max >= P,
 %                so the only answser will be: X = N, Y = Max.
-s2_sumList(Odd,Limit,[]) :- 
-    next_prime(Limit//2,Max),
-    Odd > Max,
-    !.
-s2_sumList(Odd,Limit,L) :-
-    Odd1 is Odd - 2,
-    is_prime(Odd1),
-    !,
-    Odd2 is Odd + 2,
-    s2_sumList(Odd2,Limit,L).
-s2_sumList(Odd,Limit,[Odd|T]) :-
-    Odd1 is Odd + 2,
-    s2_sumList(Odd1,Limit,T).
-
-% s2_splitSum(ResultList,MinX,SumList)
-% 
-% Almost same as s1_splitSum.
-% s2_splitSum will split the Sum in SumList into 2
-% numbers where they are not both primes.
-s2_splitSum([],_,[]).
-s2_splitSum(L,X,[S|T]) :-
-    X >= S/2,
-    !,
-    s2_splitSum(L,2,T).
-s2_splitSum(L,X,[S|T]) :-
-    Y is S - X,
-    is_prime(X),
-    is_prime(Y),
-    !,
-    X1 is X + 1,
-    s2_splitSum(L,X1,[S|T]).
-s2_splitSum([[X,Y,S,P]|T1],X,[S|T2]) :-
-    Y is S - X,
-    X1 is X + 1,
-    P is X * Y,
-    s2_splitSum(T1,X1,[S|T2]).
-
-% s2_noSort(List,Limit)
+%s2_sumList(Odd,Limit,[]) :- 
+%    next_prime(Limit//2,Max),
+%    Odd > Max,
+%    !.
+%s2_sumList(Odd,Limit,L) :-
+%    Odd1 is Odd - 2,
+%    is_prime(Odd1),
+%    !,
+%    Odd2 is Odd + 2,
+%    s2_sumList(Odd2,Limit,L).
+%s2_sumList(Odd,Limit,[Odd|T]) :-
+%    Odd1 is Odd + 2,
+%    s2_sumList(Odd1,Limit,T).
 %
-% List: a list which satified (b)
-s2_noSort(Q,Limit) :-
-    s2_sumList(5,Limit,L),
-    s2_splitSum(Q,2,L).
-
-% s2(ResulitList,Limit)
+%% s2_splitSum(ResultList,MinX,SumList)
+%% 
+%% Almost same as s1_splitSum.
+%% s2_splitSum will split the Sum in SumList into 2
+%% numbers where they are not both primes.
+%s2_splitSum([],_,[]).
+%s2_splitSum(L,X,[S|T]) :-
+%    X >= S/2,
+%    !,
+%    s2_splitSum(L,2,T).
+%s2_splitSum(L,X,[S|T]) :-
+%    Y is S - X,
+%    is_prime(X),
+%    is_prime(Y),
+%    !,
+%    X1 is X + 1,
+%    s2_splitSum(L,X1,[S|T]).
+%s2_splitSum([[X,Y,S,P]|T1],X,[S|T2]) :-
+%    Y is S - X,
+%    X1 is X + 1,
+%    P is X * Y,
+%    s2_splitSum(T1,X1,[S|T2]).
 %
-% Generate a list which satisfied (b),
-% and sorted by ascending values of P.
-s2(Q,Limit) :-
-    s2_noSort(L,Limit),
-    quicksortP(L,Q).
-
+%% s2_noSort(List,Limit)
+%%
+%% List: a list which satified (b)
+%s2_noSort(Q,Limit) :-
+%    s2_sumList(5,Limit,L),
+%    s2_splitSum(Q,2,L).
+%
+%% s2(ResulitList,Limit)
+%%
+%% Generate a list which satisfied (b),
+%% and sorted by ascending values of P.
+%s2(Q,Limit) :-
+%    s2_noSort(L,Limit),
+%    quicksortP(L,Q).
+%
 % s3 starts here.
 % ------------------------------------------------------------------------------
 % s3 will sort out all possilble X and Y, where:
 %   1. P only occurs once in s2
 
+
+delete_P(_,[],[]).
+delete_P(P,[[_,_,_,P]|T],L) :-
+    !,
+    delete_P(P,T,L).
+delete_P(P,[H|T1],[H|T2]) :-
+    delete_P(P,T1,T2).
+
+s3_filterP([],[]).
+s3_filterP([[_,_,_,P]|T],L1) :-
+    mem([_,_,_,P],T),
+    !,
+    delete_P(P,T,L2),
+    s3_filterP(L2,L1).
+s3_filterP([H|T1],[H|T2]) :-
+    s3_filterP(T1,T2).
+
+s3_noSort(Q,Limit) :-
+    s2_noSort(L,Limit),
+    s3_filterP(L,Q).
+
+s3(Q,Limit) :-
+    s3_noSort(L,Limit),
+    quicksortS(L,Q).
+
 % s3_noSort(List,Limit)
 %
 % List: a list which satified (c)
-s3_noSort(Q,Limit) :-
-    s2_noSort(L1,Limit),
-    pList(L1,L2),
-    dupList(L2,L3),
-    filterP(L1,L3,Q).
+%s3_noSort(Q,Limit) :-
+%    s2_noSort(L1,Limit),
+%    pList(L1,L2),
+%    dupList(L2,L3),
+%    filterP(L1,L3,Q).
 
 % s3(ResulitList,Limit)
 %
 % Generate a list which satisfied (c)
 % and sorted by ascending values of S.
-s3(Q,Limit) :-
-    s3_noSort(L,Limit),
-    quicksortS(L,Q).
+%s3(Q,Limit) :-
+%    s3_noSort(L,Limit),
+%    quicksortS(L,Q).
     
 
 % s4 starts here.
@@ -362,14 +477,36 @@ s3(Q,Limit) :-
 % s4 will sort out all possilble X and Y, where:
 %   1. S only occurs once in s3
 
+
+delete_S(_,[],[]).
+delete_S(S,[[_,_,S,_]|T],L) :-
+    !,
+    delete_S(S,T,L).
+delete_S(S,[H|T1],[H|T2]) :-
+    delete_S(S,T1,T2).
+
+s4_filterS([],[]).
+s4_filterS([[_,_,S,_]|T],L1) :-
+    mem([_,_,S,_],T),
+    !,
+    delete_S(S,T,L2),
+    s4_filterS(L2,L1).
+s4_filterS([H|T1],[H|T2]) :-
+    s4_filterS(T1,T2).
+
+s4(Q,Limit) :-
+    s3_noSort(L,Limit),
+    s4_filterS(L,Q).
+
+
 % s4(List,Limit)
 %
 % List: a list which satified (d)
-s4(Q,Limit) :-
-    s3_noSort(L1,Limit),
-    sList(L1,L2),
-    dupList(L2,L3),
-    filterS(L1,L3,Q).
+%s4(Q,Limit) :-
+%    s3_noSort(L1,Limit),
+%    sList(L1,L2),
+%    dupList(L2,L3),
+%    filterS(L1,L3,Q).
 
 
 

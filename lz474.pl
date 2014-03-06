@@ -12,6 +12,12 @@ counts3(Limit,N) :-
     s3(Q,Limit),
     getn(Q,0,N).
 
+% mem(Element,List)
+%
+% Check if Element is in List
+mem(X,[X|_]).
+mem(X,[_|T]) :-
+    mem(X,T).
 
 % is_prime(Num)
 %
@@ -181,7 +187,7 @@ remove([A,A,B|T1],[A,A|T2]) :-
 remove([_,B|T],L) :-
     remove([B|T],L).
 
-removeSingle([],[]).
+removeSingleP([],[]).
 removeSingleP([_],[]).
 removeSingleP([[X1,Y1,S1,P],[X2,Y2,S2,P]],[[X1,Y1,S1,P],[X2,Y2,S2,P]]).
 removeSingleP([[X1,Y1,S1,P],[X2,Y2,S2,P],[X3,Y3,S3,P]|T1],[[X1,Y1,S1,P]|T2]) :-
@@ -218,6 +224,45 @@ s1(Q,Limit) :-
     mergesortS(L3,Q).
 
 
+%s2_numXList(_,[],[],_).
+%s2_numXList(Num,[H|T],L,Limit) :-
+%    Num + H > Limit,
+%    s2_numXList(Num,T,L,Limit),
+%    !.
+%s2_numXList(Num,[H1|T1],[H2|T2],Limit) :-
+%    H2 is Num + H1,
+%    s2_numXList(Num,T1,T2,Limit).
+%
+%s2_removalList([],[],_).
+%s2_removalList([H|T],R,Limit) :-
+%    s2_numXList(H,T,L,Limit),
+%    app(L,R1,R),
+%    s2_removalList(T,R1,Limit).
+%
+%s2_filterS([],[],_).
+%s2_filterS([[_,_,S,_]|T],L,RL) :-
+%    mem(S,RL),
+%    !,
+%    s2_filterS(T,L,RL).
+%s2_filterS([H|T1],[H|T2],RL) :-
+%    s2_filterS(T1,T2,RL).
+%
+%s2_noSort(Q,Limit) :-
+%    numList(2,Limit,P,_),
+%    s2_removalList(P,RL,Limit),
+%    s1(L,Limit),
+%    s2_filterS(L,Q,RL).
+%
+%s2(Q,Limit) :-
+%    s2_noSort(L,Limit),
+%    removeSingleS(L,L2),
+%    mergesortP(L2,L3),
+%    removeSingleP(L3,L4),
+%    mergesortS(L4,Q).
+
+
+
+
 % s2 starts here.
 % ------------------------------------------------------------------------------
 % s2 will sort out all possilble X and Y, where:
@@ -228,7 +273,7 @@ s1(Q,Limit) :-
 %              - if N is prime, not satisfied (1);
 %              - if N is not prime, N = A * B (1 < A < B):
 %                P = Max * (A * B),
-%                A * Max >= P,
+%                A * Max + B > Limit,
 %                so the only answser will be: X = N, Y = Max.
 %   3. (Sum - 2) must not be a prime;
 %      Reason: - Sum = odd + even;
@@ -237,7 +282,15 @@ s1(Q,Limit) :-
 %                prime.
 %   4. S =\= Prime + Prime 
 
+
+
 s2_filter([],[],_).
+s2_filter([[_,_,S,_]|T],L,Max) :-
+    S mod 3 =:= 0,
+    R is S / 3,
+    is_prime(R),
+    !,
+    s2_filter(T,L,Max). 
 s2_filter([[_,_,S,_]|T],L,Max) :-
     is_prime(S - 2),
     !,
@@ -256,15 +309,37 @@ s2_noSort(Q,Limit) :-
     s2_filter(L,Q,Max).
 
 s2(Q,Limit) :-
-    s2_noSort(L1,Limit),
+    s2_noSort(L,Limit),
+    mergesortP(L,Q).
+
     %mergesortP(L1,L2),
     %removeSingleP(L2,L3),
-    %mergesortP(L3,L4),
+    %mergesortS(L3,L4),
     %removeSingleS(L4,Q).
-    mergesortP(L1,Q).
+    %mergesortP(L1,L2),
+    % removeSingleP(L2,Q).
 
-
-
+%get_filterSList(L,Limit) :-
+%    numList(2,Limit,P,_),
+%    get_ccList(P,L,Limit).
+%
+%s2_filter([],[],_).
+%s2_filter([[_,_,S,_]|T],L,FilterL) :-
+%    mem([_,_,S,_],FilterL),
+%    !,
+%    s2_filter(T,L,FilterL). 
+%s2_filter([[X,Y,S,P]|T1],[[X,Y,S,P]|T2],FilterL) :-
+%    S mod 2 =:= 1,
+%    %S =< Max,
+%    !,
+%    s2_filter(T1,T2,FilterL).
+%s2_filter([_|T],L,FilterL) :-
+%    s2_filter(T,L,FilterL). 
+%
+%s2(Q,Limit) :-
+%    get_filterSList(FL,Limit),
+%    s1_noSort(L,Limit),
+%    s2_filter(L,Q,FL).
 
 %factorize_P(P,X,[],_) :-
 %    X * X > P,

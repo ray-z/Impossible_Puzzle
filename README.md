@@ -12,3 +12,7 @@ The following conversation takes place:
 (d) S: Now I know the two numbers.  
 What are the numbers?  
 
+How to use mark.pl:  
+?- consult(mark).  
+?- mark('abc12.pl').  
+

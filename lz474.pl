@@ -175,17 +175,43 @@ ccList(X,[Y|T1],[[X,Y,S,P]|T2],Limit) :-
     P is X * Y,
     ccList(X,T1,T2,Limit).
 
-remove([],[]).
-remove([_],[]).
-remove([A,A],[A,A]).
-remove([A,A,A|T1],[A|T2]) :-
-    remove([A,A|T1],T2),
+%remove([],[]).
+%remove([_],[]).
+%remove([A,A],[A,A]).
+%remove([A,A,A|T1],[A|T2]) :-
+%    remove([A,A|T1],T2),
+%    !.
+%remove([A,A,B|T1],[A,A|T2]) :-
+%    remove([B|T1],T2),
+%    !.
+%remove([_,B|T],L) :-
+%    remove([B|T],L).
+
+% splitByP(InputList,SinglePList,PluralPList)
+splitByP([],[],[]).
+splitByP([A],[A],[]).
+splitByP([[X1,Y1,S1,P],[X2,Y2,S2,P]],[],[[X1,Y1,S1,P],[X2,Y2,S2,P]]).
+splitByP([[X1,Y1,S1,P],[X2,Y2,S2,P],[X3,Y3,S3,P]|T1],L,[[X1,Y1,S1,P]|T2]) :-
+    splitByP([[X2,Y2,S2,P],[X3,Y3,S3,P]|T1],L,T2),
     !.
-remove([A,A,B|T1],[A,A|T2]) :-
-    remove([B|T1],T2),
+splitByP([[X1,Y1,S1,P],[X2,Y2,S2,P],H|T1],L,[[X1,Y1,S1,P],[X2,Y2,S2,P]|T2]) :-
+    splitByP([H|T1],L,T2),
     !.
-remove([_,B|T],L) :-
-    remove([B|T],L).
+splitByP([A,B|T1],[A|T2],L) :-
+    splitByP([B|T1],T2,L).
+
+% splitByS(InputList,SinglePList,PluralPList)
+splitByS([],[],[]).
+splitByS([A],[A],[]).
+splitByS([[X1,Y1,S,P1],[X2,Y2,S,P2]],[],[[X1,Y1,S,P1],[X2,Y2,S,P2]]).
+splitByS([[X1,Y1,S,P1],[X2,Y2,S,P2],[X3,Y3,S,P3]|T1],L,[[X1,Y1,S,P1]|T2]) :-
+    splitByS([[X2,Y2,S,P2],[X3,Y3,S,P3]|T1],L,T2),
+    !.
+splitByS([[X1,Y1,S,P1],[X2,Y2,S,P2],H|T1],L,[[X1,Y1,S,P1],[X2,Y2,S,P2]|T2]) :-
+    splitByS([H|T1],L,T2),
+    !.
+splitByS([A,B|T1],[A|T2],L) :-
+    splitByS([B|T1],T2,L).
 
 removeSingleP([],[]).
 removeSingleP([_],[]).
@@ -220,7 +246,8 @@ s1_noSort(Q,Limit) :-
 s1(Q,Limit) :-
     s1_noSort(L1,Limit),
     mergesortP(L1,L2),
-    removeSingleP(L2,L3),
+    splitByP(L2,_,L3),
+    %removeSingleP(L2,L3),
     mergesortS(L3,Q).
 
 
@@ -266,8 +293,7 @@ s1(Q,Limit) :-
 % s2 starts here.
 % ------------------------------------------------------------------------------
 % s2 will sort out all possilble X and Y, where:
-%   1. S is odd number only - Goldbach conjecture
-%   2. S =< Max, where Max is the next prime of Limit//2:
+%   1. S =< Max, where Max is the next prime of Limit//2;
 %      Reason: if S > Max, suppose: 
 %              X = N, Y = Max, so S = Max + N, P = Max * N:
 %              - if N is prime, not satisfied (1);
@@ -275,33 +301,43 @@ s1(Q,Limit) :-
 %                P = Max * (A * B),
 %                A * Max + B > Limit,
 %                so the only answser will be: X = N, Y = Max.
+%   2. S is odd number only - Goldbach conjecture;
 %   3. (Sum - 2) must not be a prime;
 %      Reason: - Sum = odd + even;
 %              - the even number can be 2, which is a prime.
 %                Therefore the odd number must not be a
 %                prime.
-%   4. S =\= Prime + Prime 
-
+%   4. S =/= Prime * 3.
+%      Reason: S = A + B where A=Prime, B=Prime*2,
+%              this will be the only answer.
 
 
 s2_filter([],[],_).
 s2_filter([[_,_,S,_]|T],L,Max) :-
-    S mod 3 =:= 0,
-    R is S / 3,
-    is_prime(R),
+    S > Max,
+    !,
+    s2_filter(T,L,Max). 
+s2_filter([[_,_,S,_]|T],L,Max) :-
+    S mod 2 =:= 0,
     !,
     s2_filter(T,L,Max). 
 s2_filter([[_,_,S,_]|T],L,Max) :-
     is_prime(S - 2),
     !,
     s2_filter(T,L,Max). 
-s2_filter([[X,Y,S,P]|T1],[[X,Y,S,P]|T2],Max) :-
-    S mod 2 =:= 1,
-    S =< Max,
+s2_filter([[_,_,S,_]|T],L,Max) :-
+    S mod 3 =:= 0,
+    R is S / 3,
+    is_prime(R),
     !,
-    s2_filter(T1,T2,Max).
-s2_filter([_|T],L,Max) :-
     s2_filter(T,L,Max). 
+s2_filter([[X,Y,S,P]|T1],[[X,Y,S,P]|T2],Max) :-
+    %S mod 2 =:= 1,
+    %S =< Max,
+    %!,
+    s2_filter(T1,T2,Max).
+%s2_filter([_|T],L,Max) :-
+%    s2_filter(T,L,Max). 
 
 s2_noSort(Q,Limit) :-
     next_prime(Limit//2,Max),
@@ -318,6 +354,16 @@ s2(Q,Limit) :-
     %removeSingleS(L4,Q).
     %mergesortP(L1,L2),
     % removeSingleP(L2,Q).
+    
+s3(Q,Limit) :-
+    s2(L1,Limit),
+    splitByP(L1,L2,_),
+    mergesortP(L2,Q).
+
+s4(Q,Limit) :-
+    s3(L,Limit),
+    splitByS(L,Q,_).
+
 
 %get_filterSList(L,Limit) :-
 %    numList(2,Limit,P,_),

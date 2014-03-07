@@ -23,7 +23,7 @@ counts3(Limit,N) :-
 
 % is_prime(Num)
 %
-% true is Num is prime.
+% true if Num is prime.
 is_prime(2).
 is_prime(3).
 is_prime(Num) :-
@@ -448,7 +448,7 @@ s2_noSort(Q,Limit) :-
 % and sorted by ascending values of P.
 s2(Q,Limit) :-
     s2_noSort(L,Limit),
-    quicksortP(L,Q).
+    quicksortS(L,Q).
 
 % s3 starts here.
 % ------------------------------------------------------------------------------

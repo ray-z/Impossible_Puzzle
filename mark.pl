@@ -1,6 +1,6 @@
 /* This Prolog program marks CM20214/221A 2013/14 CW2 as specified in <http://www.cs.bath.ac.uk/ag/CM20214-20221A/CM20214-21A-CW2-2014.pdf>
 
-v0.1 Alessio Guglielmi (University of Bath)
+v0.2 Alessio Guglielmi (University of Bath) 13 March 2014
 
 Instructions:
 
@@ -31,12 +31,13 @@ This is an example run on a correct program with a good but not spectacular effi
    Task 2 is solved correctly and with no multiple answers.
    Task 3 is solved correctly and with no multiple answers.
    Task 4 is solved correctly and with no multiple answers.
+   Task 4 requires 99302 inferences.
    Task 5 is solved correctly and with no multiple answers.
-   Task 5 requires 26690812 inferences.
-   The grades for tasks 1 to 5 are: 20 + 20 + 20 + 14 + 8 = 82.
+   Task 5 requires 6769565 inferences.
+   The grades for tasks 1 to 5 are: 20 + 20 + 20 + 16 + 13 = 89.
    The penalty for multiple answers is 0.
    No built-ins found.
-   The coursework grade is 82.
+   The coursework grade is 89.
    true.
 
 Please note that I reserve the right to add other built-ins to the list contained in this program. In fact, the specification tells you exactly what you can use, all the rest you can't! There simply are too many possibilities for me to list them all in this program.
@@ -45,7 +46,7 @@ Further tips:
 
 1) To run SWI-Prolog with more memory than the default, use something like
 
-   swipl -G32g
+   swipl -G32g -L32g
 
 on the command line.
 
@@ -56,13 +57,11 @@ on the command line.
 A final recommendation: please make sure that your program does not write anything to the display (in other words, don't use write/1 and similar and take care of all the warnings, such as for singleton variables). This is so that there is no interference with the marking program's output.                   */
 
 mark(X) :- consult(X),
-           check1(   M1,Mul1),
-           check2(   M2,Mul2),
-           check3(   M3,Mul3),
-           check4(  MP4,Mul4),
-           check5(I5,M5,Mul5),
-           f(I5,MP5),
-           M4 is round(max(0,MP4 - (18 - MP5)/2)),
+           check1(M1,Mul1),
+           check2(M2,Mul2),
+           check3(M3,Mul3),
+           check4(M4,Mul4),
+           check5(M5,Mul5),
            write('The grades for tasks 1 to 5 are: '),
            write(M1), write(' + '),
            write(M2), write(' + '),
@@ -121,18 +120,25 @@ check3( 0,   0) :-
 check4(M4,Mul4) :- current_predicate(s4/2),
                    !,
                    findall(QQ4,s4(QQ4,100),LQ4),
-                   marks4(LQ4,M4,Mul4).
+                   statistics(inferences,B4),
+                   s4(QQ4,100),
+                   statistics(inferences,A4),
+                   !,
+                   I4 is A4 - B4,
+                   marks4(LQ4,I4,M4,Mul4).
 check4( 0,   0) :-
    write('Task 4 is not solved because predicate s4/2 does not exist.\n').
 
-check5(I5,M5,Mul5) :- current_predicate(s4/2),
-                      !,
-                      statistics(inferences,B5),
-                      findall(QQ5,s4(QQ5,500),LQ5),
-                      statistics(inferences,A5),
-                      I5 is A5 - B5 - 11,
-                      marks5(LQ5,I5,M5,Mul5).
-check5( 1, 0,   0) :-
+check5(M5,Mul5) :- current_predicate(s4/2),
+                   !,
+                   findall(QQ5,s4(QQ5,500),LQ5),
+                   statistics(inferences,B5),
+                   s4(QQ5,500),
+                   statistics(inferences,A5),
+                   !,
+                   I5 is A5 - B5,
+                   marks5(LQ5,I5,M5,Mul5).
+check5( 0,   0) :-
    write('Task 5 is not solved because predicate s4/2 does not exist.\n').
 
 marks1(1747,1,20,0) :-         !,
@@ -162,26 +168,34 @@ marks3(   _,1, 0,0) :-         !,
 marks3(   _,N, 0,1) :- N >= 1   ,
    write('Task 3 is not solved correctly and there are multiple answers.\n').
 
-marks4([[[4,13,17,52]]  ]  ,20,0) :-         !,
-   write('Task 4 is solved correctly and with no multiple answers.\n').
-marks4([[[4,13,17,52]]|_]  ,20,1) :-         !,
-   write('Task 4 is solved correctly but there are multiple answers.\n').
-marks4([               _]  , 0,0) :-         !,
+marks4([[Q           ]  ],I,M4,0) :-  nonvar(Q), Q = [4,13,17,52], !,
+   write('Task 4 is solved correctly and with no multiple answers.\n'),
+   write('Task 4 requires '), write(I), write(' inferences.\n'),
+   AI is I * 68,
+   f(AI,MP4),
+   M4 is ceiling(MP4/2 + 11).
+marks4([[Q           ]|_],I,M4,1) :-  nonvar(Q), Q = [4,13,17,52], !,
+   write('Task 4 is solved correctly but there are multiple answers.\n'),
+   write('Task 4 requires '), write(I), write(' inferences.\n'),
+   AI is I * 68,
+   f(AI,MP4),
+   M4 is ceiling(MP4/2 + 11).
+marks4([               _],_, 0,0) :- !,
    write('Task 4 is not solved correctly but there are no multiple answers.\n').
-marks4([[           _]|_]  , 0,1) :-
+marks4([[           _]|_],_, 0,1) :-
    write('Task 4 is not solved correctly and there are multiple answers.\n').
 
-marks5([[[4,13,17,52]]  ],I,M5,0) :-         !,
+marks5([[Q           ]  ],I,M5,0) :- nonvar(Q), Q = [4,13,17,52], !,
    write('Task 5 is solved correctly and with no multiple answers.\n'),
    write('Task 5 requires '), write(I), write(' inferences.\n'),
    f(I,MP5),
    M5 is round(MP5 + 2).
-marks5([[[4,13,17,52]]|_],I,M5,1) :-         !,
+marks5([[Q           ]|_],I,M5,1) :- nonvar(Q), Q = [4,13,17,52], !,
    write('Task 5 is solved correctly but there are multiple answers.\n'),
    write('Task 5 requires '), write(I), write(' inferences.\n'),
    f(I,MP5),
    M5 is round(MP5 + 2).
-marks5([               _],_, 0,0) :-         !,
+marks5([               _],_, 0,0) :- !,
    write('Task 5 is not solved correctly but there are no multiple answers.\n').
 marks5([[           _]|_],_, 0,1) :-
    write('Task 5 is not solved correctly and there are multiple answers.\n').

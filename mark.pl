@@ -1,6 +1,6 @@
 /* This Prolog program marks CM20214/221A 2013/14 CW2 as specified in <http://www.cs.bath.ac.uk/ag/CM20214-20221A/CM20214-21A-CW2-2014.pdf>
 
-v0.2 Alessio Guglielmi (University of Bath) 13 March 2014
+v0.3 Alessio Guglielmi (University of Bath) 19 March 2014
 
 Instructions:
 
@@ -31,13 +31,14 @@ This is an example run on a correct program with a good but not spectacular effi
    Task 2 is solved correctly and with no multiple answers.
    Task 3 is solved correctly and with no multiple answers.
    Task 4 is solved correctly and with no multiple answers.
-   Task 4 requires 99302 inferences.
+   Task 4 requires 310551 inferences.
    Task 5 is solved correctly and with no multiple answers.
-   Task 5 requires 6769565 inferences.
-   The grades for tasks 1 to 5 are: 20 + 20 + 20 + 16 + 13 = 89.
+   Task 5 requires 26690812 inferences.
+   The grades for tasks 1 to 5 are: 20 + 20 + 20 + 15 + 8 = 83.
    The penalty for multiple answers is 0.
    No built-ins found.
-   The coursework grade is 89.
+   The coursework grade will most likely be 83.
+   The marker will inspect the program for soundness and fairness.
    true.
 
 Please note that I reserve the right to add other built-ins to the list contained in this program. In fact, the specification tells you exactly what you can use, all the rest you can't! There simply are too many possibilities for me to list them all in this program.
@@ -72,11 +73,12 @@ mark(X) :- consult(X),
            penalty(Mul1,Mul2,Mul3,Mul4,Mul5,Pen),
            write('The penalty for multiple answers is '), write(Pen),
            write('.\n'),
-           read_file_to_codes(X,XC,[]),
+           readfiletocodes(X,XC),
            string_codes(XC,XS),
            built-ins(BL),
-           check_built_ins(BL,XS,F),
-           final_mark(M,Pen,F).
+           find_built_ins(BL,XS,F),
+           final_mark(M,Pen,F),
+       write('The marker will inspect the program for soundness and fairness.').
 
 f(X,Y) :- Y is min(18,(12500/X^0.45)).
 
@@ -86,6 +88,15 @@ built-ins(['bagof(',
            'forall(',
            'setof(',
            '\\+']).
+
+find_built_ins([   ], _,0) :- !.
+find_built_ins([B|R],XS,F) :- sub_string(exact,B,XS),
+                              !,
+                              write('*** Found built-in '), write(B),
+                              write('.\n'),
+                              find_built_ins(R,XS,G),
+                              F is G + 1.
+find_built_ins([_|R],XS,F) :- find_built_ins(R,XS,F).
 
 check1(M1,Mul1) :- current_predicate(s1/2),
                    !,
@@ -117,26 +128,32 @@ check3(M3,Mul3) :- current_predicate(s3/2),
 check3( 0,   0) :-
    write('Task 3 is not solved because predicate s3/2 does not exist.\n').
 
+check4inf(I4) :- statistics(inferences,B4),
+                 s4(QQ4,100),
+                 statistics(inferences,A4),
+                 !,
+                 I4 is A4 - B4 - 1.
+check4inf(0).
+
 check4(M4,Mul4) :- current_predicate(s4/2),
                    !,
                    findall(QQ4,s4(QQ4,100),LQ4),
-                   statistics(inferences,B4),
-                   s4(QQ4,100),
-                   statistics(inferences,A4),
-                   !,
-                   I4 is A4 - B4,
+                   check4inf(I4),
                    marks4(LQ4,I4,M4,Mul4).
 check4( 0,   0) :-
    write('Task 4 is not solved because predicate s4/2 does not exist.\n').
 
+check5inf(I5) :- statistics(inferences,B5),
+                 s4(QQ5,500),
+                 statistics(inferences,A5),
+                 !,
+                 I5 is A5 - B5 - 1.
+check5inf(0).
+
 check5(M5,Mul5) :- current_predicate(s4/2),
                    !,
                    findall(QQ5,s4(QQ5,500),LQ5),
-                   statistics(inferences,B5),
-                   s4(QQ5,500),
-                   statistics(inferences,A5),
-                   !,
-                   I5 is A5 - B5,
+                   check5inf(I5),
                    marks5(LQ5,I5,M5,Mul5).
 check5( 0,   0) :-
    write('Task 5 is not solved because predicate s4/2 does not exist.\n').
@@ -182,6 +199,8 @@ marks4([[Q           ]|_],I,M4,1) :-  nonvar(Q), Q = [4,13,17,52], !,
    M4 is ceiling(MP4/2 + 11).
 marks4([               _],_, 0,0) :- !,
    write('Task 4 is not solved correctly but there are no multiple answers.\n').
+marks4([                ],_, 0,0) :- !,
+   write('Task 4 is not solved correctly but there are no multiple answers.\n').
 marks4([[           _]|_],_, 0,1) :-
    write('Task 4 is not solved correctly and there are multiple answers.\n').
 
@@ -197,28 +216,46 @@ marks5([[Q           ]|_],I,M5,1) :- nonvar(Q), Q = [4,13,17,52], !,
    M5 is round(MP5 + 2).
 marks5([               _],_, 0,0) :- !,
    write('Task 5 is not solved correctly but there are no multiple answers.\n').
+marks5([                ],_, 0,0) :- !,
+   write('Task 5 is not solved correctly but there are no multiple answers.\n').
 marks5([[           _]|_],_, 0,1) :-
    write('Task 5 is not solved correctly and there are multiple answers.\n').
 
 penalty(0,0,0,0,0, 0) :- !.
 penalty(_,_,_,_,_,20).
 
-check_built_ins([   ], _,0) :- !.
-check_built_ins([B|R],XS,F) :- sub_string(exact,B,XS),
-                               !,
-                               write('Found built-in '), write(B),
-                               write('.\n'),
-                               check_built_ins(R,XS,G),
-                               F is G + 1.
-check_built_ins([_|R],XS,F) :- check_built_ins(R,XS,F).
+final_mark(M,Pen,0)  :- !,
+                        write('No built-ins found.\n'),
+                        Grade is M - Pen,
+                        write('The coursework grade will most likely be '), 
+                        write(Grade),
+                        write('.\n').
+final_mark(M,Pen,N)  :- N > 0,
+                        !,
+                        Grade is M - Pen,
+                        write('The coursework grade will be at most '),
+                        write(Grade),
+         write('; marks will be manually deducted for the use of built-ins.\n').
 
-final_mark(M,Pen,0) :- !,
-                       write('No built-ins found.\n'),
-                       Grade is M - Pen,
-                       write('The coursework grade is '), write(Grade),
-                       write('.\n').
-final_mark(M,Pen,N) :- N > 0,
-                       Grade is M - Pen,
-                       write('The coursework grade will be at most '),
-                       write(Grade),
-    write(', and marks will be manually deducted for the use of built-ins.\n').
+/* The following is adapted from the readutil.pl SWI-Prolog library           */
+
+readfiletocodes(Spec, Codes) :-
+	absolute_file_name(Spec,
+			   [ access(read)
+			   | []
+			   ],
+			   Path),
+	setup_call_cleanup(
+	    open(Path, read, Fd, []),
+	    readstreamtocodes(Fd, Codes, []),
+	    close(Fd)).
+
+readstreamtocodes(Fd, Codes, Tail) :-
+	get_code(Fd, C0),
+	readstreamtocodes(C0, Fd, Codes0, Tail),
+	Codes = Codes0.
+
+readstreamtocodes(-1, _, Tail, Tail) :- !.
+readstreamtocodes(C, Fd, [C|T], Tail) :-
+	get_code(Fd, C2),
+	readstreamtocodes(C2, Fd, T, Tail).
